@@ -54,23 +54,28 @@ def plot_results(base_path):
     valid_precision = results.valid_precision.values
 
     plt.subplot(511)
-    plt.plot(e, loss, 'rx')
+    plt.plot(e, loss, color='red')
     plt.title('BCE')
 
     plt.subplot(512)
-    plt.plot(e, train_acc, 'rx', e, valid_acc, 'bx')
+    plt.plot(e, train_acc, color='red')
+    plt.plot(e, valid_acc, color='blue')
     plt.title('Accuracy')
+    plt.legend()
 
     plt.subplot(513)
-    plt.plot(e, train_iou, 'rx', e, valid_iou, 'bx')
+    plt.plot(e, train_iou, color='red')
+    plt.plot(e, valid_iou, color='blue')
     plt.title('IoU')
 
     plt.subplot(514)
-    plt.plot(e, train_precision, 'rx', e, valid_precision, 'bx')
+    plt.plot(e, train_precision, color='red')
+    plt.plot(e, valid_precision, color='blue')
     plt.title('Precision')
 
     plt.subplot(515)
-    plt.plot(e, train_recall, 'rx', e, valid_recall, 'bx')
+    plt.plot(e, train_recall, color='red')
+    plt.plot(e, valid_recall, color='blue')
     plt.title('Recall')
 
     plt.tight_layout()

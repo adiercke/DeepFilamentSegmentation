@@ -1,0 +1,7 @@
+path: /gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names: ['filament']

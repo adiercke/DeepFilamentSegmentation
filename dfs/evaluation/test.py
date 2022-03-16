@@ -4,7 +4,7 @@ import glob
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
-from dfs.data.data_set import ChroTelDataSet
+from dfs.data.data_set import ImageDataSet
 from dfs.model.util import iou, precision, recall
 
 base_path = '/work2/adiercke/ml/DeepFilamentSegmentation/runs/004'
@@ -16,9 +16,8 @@ model.eval()
 
 labels = sorted(glob.glob(os.path.join('/work2/adiercke/ml/yolov5_data/labels/test', 'chrotel*.txt')))
 images = [label.replace('.txt', '.jpg').replace('labels', 'images') for label in labels]
-test_data = list(zip(labels, images))
 
-test_ds = ChroTelDataSet(test_data, patch_size=(1024, 1024))
+test_ds = ImageDataSet(images, labels, patch_size=(1024, 1024))
 test_loader = DataLoader(test_ds, batch_size=8, shuffle=True, num_workers=2)
 
 test_epoch_accuracy = []

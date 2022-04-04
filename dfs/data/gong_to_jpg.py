@@ -24,6 +24,7 @@ def convert(f):
         return
     try:
         data = get_data(f)
+        data = ((data + 1) / 2 * 255).astype('uint8')
         imsave(save_file, data[0])
     except Exception as ex:
         print(ex)

@@ -44,7 +44,8 @@ class ImageDataSet(Dataset):
         if self.augmentation:
             img = self.transform(image=img)['image']
         img = (img / 255) * 2 - 1
-
+	img = img.astype(np.float32)
+	
         # original label-files
         labels = pd.read_csv(label_path, delim_whitespace=True, header=None)
         labels.columns = ['cl', 'xx1', 'yy1', 'w', 'h']
@@ -54,7 +55,9 @@ class ImageDataSet(Dataset):
         h = labels.h * img.shape[0]
 
         segmentation_img = np.zeros(img.shape)
-
+        
+	pst = zernike.zernike_noll(1, img.shape[0])
+        img[pst < 1] = np.NaN
         for i in range(len(labels)):
             # for i in range(1):
             ww = w.values[i]
@@ -63,7 +66,7 @@ class ImageDataSet(Dataset):
             yy = yc.values[i] - hh / 2.
 
             patch = img[int(yy):int(yy + hh), int(xx):int(xx + ww)]
-            threshold = np.mean(patch) - np.std(patch)
+            threshold = np.nanmean(patch) - np.nanstd(patch)
             masked_patch = (patch <= threshold)
 
             patch_label = label(masked_patch, connectivity=1)
@@ -96,6 +99,7 @@ class ImageDataSet(Dataset):
             segmentation_img = self.image_transform.apply_transform(segmentation_img, params)
             segmentation_img = segmentation_img >= 0.5 # back to boolean
         img, segmentation_img = random_patch(img, segmentation_img, self.patch_size)
+    	#img[pst < 1] = 0.        
         return np.array(img, dtype=np.float32), np.array(segmentation_img, dtype=np.float32)
 
 

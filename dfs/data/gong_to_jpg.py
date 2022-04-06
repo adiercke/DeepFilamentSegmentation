@@ -4,6 +4,7 @@ from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
 from skimage.io import imsave
 from sklearn.utils import shuffle
@@ -24,8 +25,7 @@ def convert(f):
         return
     try:
         data = get_data(f)
-        data = ((data + 1) / 2 * 255).astype('uint8')
-        imsave(save_file, data[0])
+        plt.imsave(save_file, data[0], vmin=-1, vmax=1, cmap='gray')
     except Exception as ex:
         print(ex)
         return

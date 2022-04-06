@@ -44,8 +44,7 @@ class ImageDataSet(Dataset):
         if self.augmentation:
             img = self.transform(image=img)['image']
         img = (img / 255) * 2 - 1
-	img = img.astype(np.float32)
-	
+        img = img.astype(np.float32)
         # original label-files
         labels = pd.read_csv(label_path, delim_whitespace=True, header=None)
         labels.columns = ['cl', 'xx1', 'yy1', 'w', 'h']
@@ -55,8 +54,7 @@ class ImageDataSet(Dataset):
         h = labels.h * img.shape[0]
 
         segmentation_img = np.zeros(img.shape)
-        
-	pst = zernike.zernike_noll(1, img.shape[0])
+        pst = zernike.zernike_noll(1, img.shape[0])
         img[pst < 1] = np.NaN
         for i in range(len(labels)):
             # for i in range(1):
@@ -88,6 +86,7 @@ class ImageDataSet(Dataset):
         segmentation_img *= disk(img.shape[0] // 2)[1:, 1:]
 
         # TODO remove padding
+        img = np.nan_to_num(img, nan=-1)
         img = to_shape(img, (1024, 1024), -1)
         segmentation_img = to_shape(segmentation_img, (1024, 1024), 0)
         #
@@ -99,7 +98,6 @@ class ImageDataSet(Dataset):
             segmentation_img = self.image_transform.apply_transform(segmentation_img, params)
             segmentation_img = segmentation_img >= 0.5 # back to boolean
         img, segmentation_img = random_patch(img, segmentation_img, self.patch_size)
-    	#img[pst < 1] = 0.        
         return np.array(img, dtype=np.float32), np.array(segmentation_img, dtype=np.float32)
 
 
@@ -250,7 +248,7 @@ def get_data(fits_file):
     cf = lsolv[0]
     zkfit = np.sum(np.array([((zernike.zernike_noll(i, resolution)) * cf[i - 1]) for i in range(1, nz - 1)]), axis=0)
     zkfit0 = zkfit.copy()
-    zkfit0[pst <= 0] = 1.
+    zkfit0[pst < 0] = 1.
 
     ##background:
     img_filled = data.copy()

@@ -26,7 +26,6 @@ for ifile in range(0, nf):
     vv1 = 1.3
 
     data = Normalize(vv0, vv1, clip=True)(pic0) * 2 - 1
-    data = ((data + 1) / 2 * 255).astype('uint8')
     save_file = os.path.join(out, os.path.basename(fchro[ifile]['filename']).replace('sav', 'jpg'))
-    imsave(save_file, data)
+    plt.imsave(save_file, data, vmin=-1, vmax=1, cmap='gray')
 

@@ -1,8 +1,10 @@
 {
   "epochs": 500,
-  "base_path": "/gpfs/gpfs0/robert.jarolim/filament/unet_v1",
+  "base_path": "/gpfs/gpfs0/robert.jarolim/filament/unet_v3",
   "labels_train_path": "/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/labels/train",
   "images_train_path": "/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/images/train",
   "labels_valid_path": "/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/labels/val",
-  "images_valid_path": "/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/images/val"
+  "images_valid_path": "/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/images/val",
+  "gong_img_path": "/gpfs/gpfs0/robert.jarolim/data/filament/gong_img",
+  "gong_label_path": "/beegfs/home/robert.jarolim/projects/yolov5/runs/detect/exp/labels"
 }

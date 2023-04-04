@@ -17,7 +17,7 @@ import albumentations as A
 
 ### new libs
 from aotools.functions import zernike
-from skimage import morphology
+from skimage import morphology, io
 from scipy import ndimage
 
 class ImageDataSet(Dataset):
@@ -40,10 +40,10 @@ class ImageDataSet(Dataset):
 
     def __getitem__(self, idx):
         img_path, label_path = self.data[idx]
-        img = plt.imread(img_path)
+        img = io.imread(img_path, as_gray=True)
         if self.augmentation:
             img = self.transform(image=img)['image']
-        img = (img / 255) * 2 - 1
+        img = img * 2 - 1 # norm to [-1, 1]
         img = img.astype(np.float32)
         # original label-files
         labels = pd.read_csv(label_path, delim_whitespace=True, header=None)
@@ -57,24 +57,24 @@ class ImageDataSet(Dataset):
         pst = zernike.zernike_noll(1, img.shape[0])
         img[pst < 1] = np.NaN
         for i in range(len(labels)):
-            # for i in range(1):
-            ww = w.values[i]
-            hh = h.values[i]
-            xx = xc.values[i] - ww / 2.
-            yy = yc.values[i] - hh / 2.
-
-            patch = img[int(yy):int(yy + hh), int(xx):int(xx + ww)]
-            threshold = np.nanmean(patch) - np.nanstd(patch)
-            masked_patch = (patch <= threshold)
-
-            patch_label = label(masked_patch, connectivity=1)
             try:
+                ww = w.values[i]
+                hh = h.values[i]
+                xx = xc.values[i] - ww / 2.
+                yy = yc.values[i] - hh / 2.
+                assert ww > 0 and hh > 0, 'Invalid box size!'
+
+                patch = img[int(yy):int(yy + hh), int(xx):int(xx + ww)]
+                threshold = np.nanmean(patch) - np.nanstd(patch)
+                masked_patch = (patch <= threshold)
+
+                patch_label = label(masked_patch, connectivity=1)
                 regions = regionprops(patch_label)
             except Exception as ex:
                 logging.error(ex)
                 logging.error(img_path)
-                logging.error(str(patch_label.shape))
-                raise Exception('Invalid')
+                logging.error('Width: %f; Height: %f; X: %f; Y: %f' % (ww, hh, xx, yy))
+                continue
             small_labels = np.array(
                 [prop.label for prop in regions if prop.area / np.product(patch_label.shape) < 0.01])
             masked_patch[np.isin(patch_label, small_labels)] = 0
@@ -83,12 +83,8 @@ class ImageDataSet(Dataset):
 
         # set overlapping label to [0, 1] and crop off-limb
         segmentation_img[segmentation_img > 1] = 1
-        segmentation_img *= disk(img.shape[0] // 2)[1:, 1:]
-
-        # TODO remove padding
+        #segmentation_img *= disk(img.shape[0] // 2)[1:, 1:]
         img = np.nan_to_num(img, nan=-1)
-        img = to_shape(img, (1024, 1024), -1)
-        segmentation_img = to_shape(segmentation_img, (1024, 1024), 0)
         #
         img = np.expand_dims(img, 0).astype(np.float32)
         segmentation_img = np.expand_dims(segmentation_img, 0).astype(np.float32)
@@ -110,8 +106,8 @@ class EvaluationDataSet(Dataset):
 
     def __getitem__(self, idx):
         img_path = self.data[idx]
-        img = plt.imread(img_path)
-        img = (img / 255) * 2 - 1
+        img = io.imread(img_path, as_gray=True)
+        img = img * 2 - 1
         img = np.expand_dims(img, 0).astype(np.float32)
         return img
 
@@ -135,15 +131,6 @@ def random_patch(img, segmentation_img, patch_size):
     patch_segmentation = segmentation_img[:, patch_y:patch_y + patch_size[0], patch_x:patch_x + patch_size[1]]
 
     return patch, patch_segmentation
-
-def to_shape(a, shape, c):
-    y_, x_ = shape
-    y, x = a.shape
-    y_pad = (y_-y)
-    x_pad = (x_-x)
-    return np.pad(a,((y_pad//2, y_pad//2 + y_pad%2),
-                     (x_pad//2, x_pad//2 + x_pad%2)),
-                  mode = 'constant', constant_values=c)
 
 def polarint(img):
     ### adapted from IDL STOOLS Library stools_polarint.pro (Kuckein et al. 2017, IAU Sym. 327, 20)

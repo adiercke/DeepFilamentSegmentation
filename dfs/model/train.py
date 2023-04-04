@@ -7,14 +7,24 @@ import pickle
 import numpy as np
 import pandas as pd
 import torch
+from dateutil.parser import parse
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from dfs.data.data_set import ImageDataSet
-from dfs.evaluation.callback import PlotCallback
+from dfs.model.callback import PlotCallback
 from dfs.model.util import iou, precision, recall, plot_results
 
+test_months = {2010:[], 2011:[],
+               2012:[10, 11],
+               2013:[1, 2, 3],
+               2014:[8, 9],
+               2015:[9, 10, 11],
+               2016:[9, 11, 12],
+               2017:[6,7],
+               2018:[10, 11, 12],
+               2019:[], 2020:[], 2021:[], 2022:[]}
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, required=True,
@@ -36,20 +46,35 @@ labels_train_path = args.labels_train_path
 images_train_path = args.images_train_path
 labels_valid_path = args.labels_valid_path
 images_valid_path = args.images_valid_path
+gong_label_path = args.gong_label_path
+gong_img_path = args.gong_img_path
 
-train_labels_gong = glob.glob('/beegfs/home/robert.jarolim/projects/yolov5/runs/detect/exp3/labels/????-0[2-9]-*.txt')
-train_images_gong = [os.path.join('/gpfs/gpfs0/robert.jarolim/data/filament/gong_img', os.path.basename(f).replace('txt', 'jpg')) for f in train_labels_gong]
+labels_gong = glob.glob(os.path.join(gong_label_path, '*.txt'))
+dates_gong = [parse(os.path.basename(f).split('.')[0]) for f in labels_gong]
+
+train_labels_gong = [f for f, d in zip(labels_gong, dates_gong) if d.month not in test_months[d.year]]
+train_images_gong = [os.path.join(gong_img_path, os.path.basename(f).replace('txt', 'jpg')) for f in train_labels_gong]
 
 train_labels_ct = sorted(glob.glob(os.path.join(labels_train_path, 'chrotel_*.txt')))
 train_images_ct = [os.path.join(images_train_path, os.path.basename(f).replace('txt', 'jpg')) for f in train_labels_ct]
 
+# assert images exist
+existing = np.array([os.path.exists(f) for f in train_images_ct])
+train_labels_ct = np.array(train_labels_ct)[existing].tolist()
+train_images_ct = np.array(train_images_ct)[existing].tolist()
+
 valid_labels = sorted(glob.glob(os.path.join(labels_valid_path, 'chrotel_*.txt')))
 valid_images = [os.path.join(images_valid_path, os.path.basename(f).replace('txt', 'jpg')) for f in valid_labels]
 
-train_ds = ImageDataSet(train_images_gong + train_images_ct, train_labels_gong + train_labels_ct, patch_size=(512, 512), augmentation=False)
-train_loader = DataLoader(train_ds, batch_size=4, shuffle=True, num_workers=args.num_workers)
+# assert images exist
+existing = np.array([os.path.exists(f) for f in valid_images])
+valid_labels_ct = np.array(valid_labels)[existing].tolist()
+valid_images_ct = np.array(valid_images)[existing].tolist()
+
+train_ds = ImageDataSet(train_images_gong + train_images_ct, train_labels_gong + train_labels_ct, patch_size=(1024, 1024), augmentation=False)
+train_loader = DataLoader(train_ds, batch_size=2, shuffle=True, num_workers=args.num_workers)
 valid_ds = ImageDataSet(valid_images, valid_labels, patch_size=(1024, 1024), augmentation=False)
-valid_loader = DataLoader(valid_ds, batch_size=8, shuffle=True, num_workers=args.num_workers)
+valid_loader = DataLoader(valid_ds, batch_size=8, shuffle=False, num_workers=args.num_workers)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -61,7 +86,12 @@ model.to(device)
 model.train()
 opt = torch.optim.Adam(model.parameters(), lr=1e-4)#torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
 # scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=100, gamma=0.5)
-criterion = nn.BCELoss(weight=torch.cuda.FloatTensor([10]))
+
+bce_loss = nn.BCELoss(reduction='none')
+def criterion(input, target, weight=10):
+    loss = bce_loss(input, target)
+    weighted_loss = target * weight * loss + (1 - target) * loss
+    return weighted_loss.mean()
 
 plot_callback = PlotCallback(*next(valid_loader.__iter__()), model, base_path)
 

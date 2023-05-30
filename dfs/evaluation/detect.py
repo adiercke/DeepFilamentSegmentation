@@ -1,3 +1,4 @@
+import argparse
 import glob
 import os
 import shutil
@@ -5,23 +6,32 @@ import shutil
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
-from skimage.io import imsave
 from torch.utils.data import DataLoader
-from torchvision.transforms import Pad
 from tqdm import tqdm
 
 from dfs.data.data_set import EvaluationDataSet
 
-base_path = '/gpfs/gpfs0/robert.jarolim/filament/unet_v3'
+parser = argparse.ArgumentParser()
+parser.add_argument('--checkpoint_path', type=str, required=True, help='path to the model weights')
+parser.add_argument('--data_path', type=str, required=True, help='path to the images')
+parser.add_argument('--result_path', type=str, required=True, help='path to the result directory')
+
+args = parser.parse_args()
+
+checkpoint_path = args.checkpoint_path
+data_path = args.data_path
+result_path = args.result_path
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet', in_channels=1, out_channels=1, init_features=32, pretrained=False)
+model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet', in_channels=1, out_channels=1,
+                       init_features=32, pretrained=False)
 model.to(device)
-cp = torch.load(os.path.join(base_path, 'checkpoint.pt'), map_location=device)
+cp = torch.load(checkpoint_path, map_location=device)
 model.load_state_dict(cp['m'])
 model.eval()
 
-def evaluate(files, result_path, batch_size = 8):
+
+def evaluate(files, result_path, batch_size=8):
     ds = EvaluationDataSet(files)
     loader = DataLoader(ds, batch_size=batch_size, num_workers=4)
     file_batches = [files[x:x + batch_size] for x in range(0, len(files), batch_size)]
@@ -36,12 +46,6 @@ def evaluate(files, result_path, batch_size = 8):
     shutil.make_archive(result_path, 'zip', result_path)
 
 
-ct_result_path = os.path.join(base_path, 'evaluation_chrotel_test')
-os.makedirs(ct_result_path, exist_ok=True)
-ct_files = sorted(glob.glob('/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/images/test/*.jpg'))
-evaluate(ct_files, ct_result_path)
-
-gong_result_path = os.path.join(base_path, 'evaluation_gong')
-os.makedirs(gong_result_path, exist_ok=True)
-gong_files = sorted(glob.glob('/gpfs/gpfs0/robert.jarolim/data/filament/gong_img/*.jpg'))
-evaluate(gong_files, gong_result_path)
+os.makedirs(result_path, exist_ok=True)
+ct_files = sorted(glob.glob(data_path))
+evaluate(ct_files, result_path)

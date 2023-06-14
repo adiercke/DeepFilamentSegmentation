@@ -11,4 +11,4 @@
 
 module load python/pytorch-1.6.0
 cd /beegfs/home/robert.jarolim/projects/FilamentDetection
-python3 -i -m dfs.evaluation.detect --checkpoint_path '/gpfs/gpfs0/robert.jarolim/filament/unet_v3/checkpoint.pt' --data_path '/gpfs/gpfs0/robert.jarolim/data/filament/yolov5_data/images/test/*.jpg' --result_path '/gpfs/gpfs0/robert.jarolim/filament/unet_v3/evaluation_test'
+python3 -i -m dfs.evaluation.detect --checkpoint_path '/gpfs/gpfs0/robert.jarolim/filament/unet_v3/checkpoint.pt' --data_path '/gpfs/gpfs0/robert.jarolim/data/filament/kso_img/*.jpg' --result_path '/gpfs/gpfs0/robert.jarolim/filament/unet_v3/kso'

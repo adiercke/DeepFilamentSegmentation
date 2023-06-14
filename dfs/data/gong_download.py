@@ -9,7 +9,7 @@ import pandas as pd
 from astropy.io.fits import HDUList
 from sunpy.map import Map
 
-data_set_path = '/gpfs/gpfs0/robert.jarolim/data/filament/gong'
+data_set_path = '/gpfs/gpfs0/robert.jarolim/data/filament/gong_test'
 os.makedirs(data_set_path, exist_ok=True)
 
 logging.basicConfig(
